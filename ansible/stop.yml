@@ -1,0 +1,7 @@
+---
+- hosts: nuxeo:kafka:monitor:elastic:gatling:postgres:mongo
+  gather_facts: no
+  sudo: yes
+  tasks:
+  - name: Stop all docker compose
+    shell: docker-compose -f /ssd/docker-compose.yml down --volume --timeout 60

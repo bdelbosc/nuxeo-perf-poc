@@ -1,0 +1,83 @@
+---
+# setup disk layout
+- name: Default format command in ext4
+  set_fact:
+    format_cmd: "mkfs.ext4"
+    fstype: ext4
+  when: "'mongodb' not in group_names"
+
+- name: Format command for xfs
+  set_fact:
+    format_cmd: "mkfs.xfs -f"
+    fstype: xfs
+  when: "'mongodb' in group_names"
+
+
+# ssd is a raid0 of the 2 local instance ssd disk
+- name: Check if md0 volume is mounted
+  shell: cat /proc/mounts | grep /dev/md0
+  changed_when: False
+  failed_when: False
+  register: mounted
+
+- name: Create raid0 volume for 4 disks
+  shell: mdadm --create --run --verbose /dev/md0 --level=0 --raid-devices=4 /dev/nvme1n1 /dev/nvme2n1 /dev/nvme3n1 /dev/nvme4n1
+  when: "mounted.stdout == '' and raid0[group_names[0]] == 4"
+
+- name: Create raid0 volume for 3 disks
+  shell: mdadm --create --run --verbose /dev/md0 --level=0 --raid-devices=3 /dev/nvme1n1 /dev/nvme2n1 /dev/nvme3n1
+  when: "mounted.stdout == '' and raid0[group_names[0]] == 3"
+
+- name: Create raid0 volume for 2 disks
+  shell: mdadm --create --run --verbose /dev/md0 --level=0 --raid-devices=2 /dev/nvme1n1 /dev/nvme2n1
+  when: "mounted.stdout == '' and raid0[group_names[0]] == 2"
+
+- name: Create raid0 volume for 1 disk :)
+  shell: mdadm --create --run --verbose /dev/md0 --level=0 --raid-devices=1 --force /dev/nvme1n1
+  when: "mounted.stdout == '' and raid0[group_names[0]] == 1"
+
+- name: Format raid0 /ssd volume
+  shell: "{{ format_cmd }} /dev/md0"
+  when: "mounted.stdout == '' and raid0[group_names[0]] > 0"
+
+- name: Label ext4 disk
+  shell: e2label /dev/md0 RAID0
+  when: "mounted.stdout == '' and 'mongodb' not in group_names and raid0[group_names[0]] > 0"
+
+- name: Label xfs disk
+  shell: xfs_admin -L RAID0 /dev/md0
+  when: "mounted.stdout == '' and 'mongodb' in group_names and raid0[group_names[0]] > 0"
+
+- name: Mount {{fstype}} /ssd
+  mount:
+    name: /ssd
+    src: LABEL=RAID0
+    fstype: "{{fstype}}"
+    opts: noatime,nodiratime,nofail
+    state: mounted
+  when: "mounted.stdout == '' and raid0[group_names[0]] > 0"
+
+- name: Persist raid config
+  shell: mdadm --verbose --detail --scan >> /etc/mdadm/mdadm.conf
+  when: "mounted.stdout == '' and raid0[group_names[0]] > 0"
+
+# TODO: persist this setting on boot
+
+- name: Set /ssd read ahead
+  # 32 sector is 16k
+  shell: blockdev --setra 32 /dev/md0
+  when: "mounted.stdout == '' and 'mongodb' in group_names"
+
+- name: Use noop scheduler /ssd
+  shell: echo noop > /sys/block/md0/queue/scheduler
+  when: "mounted.stdout == '' and raid0[group_names[0]] > 0"
+
+# hugepage
+- name: Disable hugepage defrag
+  shell: echo never > /sys/kernel/mm/transparent_hugepage/defrag
+
+- name: Disable hugepage
+  shell: echo never > /sys/kernel/mm/transparent_hugepage/enabled
+
+- name: Disable zone reclaim
+  shell: echo 0 > /proc/sys/vm/zone_reclaim_mode

@@ -1,0 +1,56 @@
+---
+
+- name: Find mongo hostname
+  set_fact:
+    hname: mongo{{ groups.mongodb.index(inventory_hostname) + 1 }}
+  when: "'mongodb' in group_names"
+
+- name: Find postgres hostname
+  set_fact:
+    hname: postgres{{ groups.postgres.index(inventory_hostname) + 1 }}
+  when: "'postgres' in group_names"
+
+- name: Find nuxeo hostname
+  set_fact:
+    hname: nuxeo{{ groups.nuxeo.index(inventory_hostname) + 1 }}
+  when: "'nuxeo' in group_names"
+
+- name: Find nuxeospot hostname
+  set_fact:
+    hname: nuxeospot{{ groups.nuxeospot.index(inventory_hostname) + 1 }}
+  when: "'nuxeospot' in group_names"
+
+- name: Find elastic hostname
+  set_fact:
+    hname: elastic{{ groups.elastic.index(inventory_hostname) + 1 }}
+  when: "'elastic' in group_names"
+
+- name: Find kafka hostname
+  set_fact:
+    hname: kafka{{ groups.kafka.index(inventory_hostname) + 1 }}
+  when: "'kafka' in group_names"
+
+- name: Find gatling hostname
+  set_fact:
+    hname: gatling{{ groups.gatling.index(inventory_hostname) + 1 }}
+  when: "'gatling' in group_names"
+
+- name: Find monitor hostname
+  set_fact:
+    hname: monitor{{ groups.monitor.index(inventory_hostname) + 1 }}
+  when: "'monitor' in group_names"
+
+- name: Set hostname
+  shell: hostname {{ hname }}
+
+- name: Update /etc/hostname
+  shell: echo -n {{ hname }} > /etc/hostname
+
+- name: Backup hosts
+  shell: cp /etc/hosts /etc/hosts.bak1
+
+- name: Set /etc/hosts
+  template: src=hosts.j2 dest=/etc/hosts
+
+- name: Backup hosts
+  shell: mv /etc/hosts.bak1 /etc/hosts.bak

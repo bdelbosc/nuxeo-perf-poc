@@ -1,0 +1,17 @@
+---
+- hosts: localhost
+  gather_facts: no
+  sudo: no
+  roles:
+  - role: s3
+  - {role: ec2, type: nuxeo}
+  - {role: ec2, type: postgres}
+  - {role: ec2, type: elastic}
+  - {role: ec2, type: kafka}
+  - {role: ec2, type: gatling}
+  - {role: ec2, type: monitor}
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - include: ./roles/ec2/tasks/summary.yml

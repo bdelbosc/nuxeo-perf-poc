@@ -1,0 +1,24 @@
+kafkahq:
+  server:
+    # if behind a reverse proxy, path to kafkahq with trailing slash
+    base-path: "/kafkahq/"
+
+  # default kafka properties for each clients, available for admin / producer / consumer (optionnal)
+  clients-defaults:
+    consumer:
+      properties:
+        isolation.level: read_committed
+
+  # list of kafka cluster available for kafkahq
+  connections:
+    # url friendly name for the cluster
+    default-1:
+      # standard kafka properties (optionnal)
+      properties:
+        bootstrap.servers: "kafka1:9092"
+
+  topic-data:
+    # default sort order (OLDEST, NEWEST)
+    sort: OLDEST
+    # max record per page
+    size: 50

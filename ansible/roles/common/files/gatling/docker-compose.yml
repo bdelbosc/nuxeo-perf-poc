@@ -1,0 +1,21 @@
+version: "3.5"
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    hostname: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - /ssd/.htpasswd:/etc/nginx/htpasswd:ro
+      - /ssd/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /ssd/static:/static:ro
+      - /etc/hosts:/etc/hosts:ro
+  redis:
+    image: redis:5.0-alpine
+    container_name: redis
+    hostname: redis
+    ports:
+      - "16379:6379"
+    volumes:
+      - /ssd/data/redis:/data:rw

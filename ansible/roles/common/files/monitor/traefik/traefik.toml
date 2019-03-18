@@ -1,0 +1,104 @@
+defaultEntryPoints = ["http"]
+debug = true
+logLevel = "DEBUG"
+
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+  [entryPoints.http.auth.basic]
+  removeHeader = true
+  usersFile = "/htpasswd"
+
+[api]
+entryPoint = "http"
+dashboard = true
+debug = true
+
+[file]
+  [backends]
+    [backends.kafkahq]
+      [backends.kafkahq.servers.server1]
+      url = "http://kafka1:8080"
+    [backends.grafana]
+      [backends.grafana.servers.server1]
+      url = "http://monitor1:3000"
+    [backends.elastic]
+      [backends.elastic.servers.server1]
+      url = "http://elastic1:9200"
+    [backends.nginx]
+      [backends.nginx.servers.server1]
+      url = "http://gatling:8080"
+
+    [backends.nuxeo1]
+      [backends.nuxeo1.servers.server1]
+      url = "http://nuxeo1:19999"
+    [backends.postgres1]
+      [backends.postgres1.servers.server1]
+      url = "http://postgres1:19999"
+    [backends.elastic1]
+      [backends.elastic1.servers.server1]
+      url = "http://elastic1:19999"
+    [backends.kafka1]
+      [backends.kafka1.servers.server1]
+      url = "http://kafka1:19999"
+    [backends.gatling1]
+      [backends.gatling1.servers.server1]
+      url = "http://gatling1:19999"
+    [backends.monitor1]
+      [backends.monitor1.servers.server1]
+      url = "http://monitor1:19999"
+
+
+  [frontends]
+    [frontends.kafkahq]
+    backend = "kafkahq"
+      [frontends.kafkahq.routes]
+        [frontends.kafkahq.routes.route0]
+        rule = "Host: {{traefik_fqdn}}; PathPrefix: /kafkahq/"
+    [frontends.grafana]
+    backend = "grafana"
+      [frontends.grafana.routes]
+        [frontends.grafana.routes.route0]
+        rule = "Host: {{traefik_fqdn}}; PathPrefixStrip: /grafana/"
+    [frontends.elastic]
+    backend = "elastic"
+      [frontends.elastic.routes]
+        [frontends.elastic.routes.route0]
+        rule = "Host: {{traefik_fqdn}}; PathPrefixStrip: /elastic/"
+    [frontends.nginx]
+    backend = "nginx"
+      [frontends.nginx.routes]
+        [frontends.nginx.routes.route0]
+        rule = "Host: {{traefik_fqdn}}; PathPrefixStrip: /nginx/"
+
+    [frontends.nuxeo1]
+    backend = "nuxeo1"
+      [frontends.nuxeo1.routes]
+        [frontends.nuxeo1.routes.route0]
+        rule = "Host: {{traefik_fqdn}}; PathPrefixStrip: /netdata/nuxeo1/"
+    [frontends.postgres1]
+    backend = "postgres1"
+      [frontends.postgres1.routes]
+        [frontends.postgres1.routes.route0]
+        rule = "Host: {{traefik_fqdn}}; PathPrefixStrip: /netdata/postgres1/"
+    [frontends.elastic1]
+    backend = "elastic1"
+      [frontends.elastic1.routes]
+        [frontends.elastic1.routes.route0]
+        rule = "Host: {{traefik_fqdn}}; PathPrefixStrip: /netdata/elastic1/"
+    [frontends.kafka1]
+    backend = "kafka1"
+      [frontends.kafka1.routes]
+        [frontends.kafka1.routes.route0]
+        rule = "Host: {{traefik_fqdn}}; PathPrefixStrip: /netdata/kafka1/"
+    [frontends.gatling1]
+    backend = "gatling1"
+      [frontends.gatling1.routes]
+        [frontends.gatling1.routes.route0]
+        rule = "Host: {{traefik_fqdn}}; PathPrefixStrip: /netdata/gatling1/"
+    [frontends.monitor1]
+    backend = "monitor1"
+      [frontends.monitor1.routes]
+        [frontends.monitor1.routes.route0]
+        rule = "Host: {{traefik_fqdn}}; PathPrefixStrip: /netdata/monitor1/"
+

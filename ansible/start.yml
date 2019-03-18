@@ -1,0 +1,19 @@
+---
+- hosts: kafka:monitor:elastic:gatling:postgres:mongo
+  gather_facts: no
+  sudo: yes
+  tasks:
+  - name: Starting Services
+    shell: docker-compose -f /ssd/docker-compose.yml up -d
+
+- hosts: nuxeo
+  gather_facts: no
+  sudo: yes
+  tasks:
+  - name: Starting Nuxeo
+    shell: docker-compose -f /ssd/docker-compose.yml up -d
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - include: ./roles/ec2/tasks/summary.yml

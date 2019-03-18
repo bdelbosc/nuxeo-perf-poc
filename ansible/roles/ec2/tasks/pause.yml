@@ -1,0 +1,13 @@
+---
+- name: List running instances
+  shell: aws ec2 describe-instances --filters "Name=tag:bench,Values={{bench}}" "Name=instance-state-name,Values=running" --region={{aws_region}} --no-paginate --query "Reservations[*].Instances[*].InstanceId" | grep "i-" | tr -d '" ,' | paste -d, -s
+  changed_when: False
+  register: existing_instances
+
+- name: Stop running instances
+  ec2:
+    region: "{{aws_region}}"
+    instance_ids: "{{existing_instances.stdout}}"
+    state: "stopped"
+    wait: yes
+  when: existing_instances.stdout != ""

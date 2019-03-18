@@ -1,0 +1,11 @@
+---
+- name: Summary
+  debug:
+    msg:
+      - "Nuxeo: {{groups.nuxeo}}"
+      - "Postgres: {{groups.postgres}}"
+      - "Mongo: {{groups.mongodb}}"
+      - "Elastic: {{groups.elastic}}"
+      - "Kafka: {{groups.kafka}}"
+      - "Gatling: {{groups.gatling}}"
+      - "Monitor: {{groups.monitor.0}}"

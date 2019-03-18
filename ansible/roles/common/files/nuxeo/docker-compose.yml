@@ -1,0 +1,28 @@
+version: "3.5"
+services:
+  nuxeo:
+    build: nuxeo
+    image: nuxeo:latest
+    container_name: nuxeo
+    hostname: nuxeo
+    ports:
+      - 8080:8080
+    volumes:
+      - /ssd/nuxeo/nuxeo.conf:/docker-entrypoint-initnuxeo.d/nuxeo.conf:ro
+      - /ssd/nuxeo/init-nuxeo.sh:/docker-entrypoint-initnuxeo.d/init-nuxeo.sh:ro
+      - /ssd/data/nuxeo:/var/lib/nuxeo/data:rw
+      - /ssd/data/nuxeo-packages:/opt/nuxeo/server/packages:rw
+      - /etc/hosts:/etc/hosts:ro
+  stream:
+    image: nuxeo:latest
+    container_name: stream
+    hostname: stream
+    depends_on:
+      - nuxeo
+    volumes:
+      - /ssd/nuxeo/nuxeo.conf:/docker-entrypoint-initnuxeo.d/nuxeo.conf:ro
+      - /ssd/stream/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+      - /ssd/data/nuxeo:/var/lib/nuxeo/data:ro
+      - /ssd/stream/wait-for-nuxeo.sh:/wait-for-nuxeo.sh:ro
+      - /etc/hosts:/etc/hosts:ro
+    command: /wait-for-nuxeo.sh /opt/nuxeo/server/bin/stream.sh monitor -k --codec avro -l "bulk-setSystemProperties,renditionBuilder,bulk-exposeBlob,bulk-removeProxy,permissionsPurge,collections,bulk-status,default,bulk-bulkIndex,bulk-index,bulk-csvExport,bulk-trash,escalation,bulk-automation,audit,bulk-zipBlob,updateACEStatus,bulk-sortBlob,bulk-setProperties,bulk-makeBlob,bulk-command,elasticSearchIndexing,fulltextUpdater,bulk-done" -i 30 --host monitor1 --port 2030

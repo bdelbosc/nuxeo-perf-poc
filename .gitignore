@@ -1,0 +1,17 @@
+venv
+deploy
+logs
+ec2.ini
+instance.clid
+ansible/group_vars/all/custom.yml
+.idea
+*.iml
+*.swp
+*.retry
+bench-scripts/
+reports/
+bench-site/public
+bin/.build
+custom/
+results/
+tmp

@@ -1,0 +1,107 @@
+# --------------------------------------------------
+# AWS keypair used to access the ec2 instances
+keypair: ****
+
+# Tag used to flag ec2 used for the bench
+bench: ****
+
+# The s3 bucket for the binary store
+bucket: nuxeo-{{bench}}
+
+# An s3 bucket used to save bench results
+bucket_results: nuxeo-{{bench}}-results
+
+# The default Nuxeo distribution to use
+nuxeo_distribution: http://community.nuxeo.com/static/latest-snapshot/nuxeo-server-tomcat,SNAPSHOT.zip
+
+# basic auth used for traefik and nginx
+basic_auth_user: ****
+basic_auth_password: ****
+# elastic ip pointing to traefik (monitor1) and gatling1
+traefik_fqdn: "****"
+gatling_fqdn: "****"
+
+# billing category
+billing_category: ****
+billing_subcategory: ****
+
+nuxeo_packages: "nuxeo-web-ui nuxeo-jsf-ui nuxeo-platform-importer amazon-s3-online-storage"
+
+ami_default: ami-****
+
+aws_region: ****
+security_group: ****
+subnet_id: ****
+instance_profile: ****
+dbprofile: postgres
+
+amis:
+  nuxeo: "{{ami_default}}"
+  nuxeospot: "{{ami_default}}"
+  postgres: "{{ami_default}}"
+  elastic: "{{ ami_default}}"
+  kafka: "{{ami_default}}"
+  gatling: "{{ami_default}}"
+  monitor: "{{ami_default}}"
+
+types:
+  mongodb: m5.xlarge
+  postgres: m5.xlarge
+  nuxeo: c5.xlarge
+  nuxeospot: c5.xlarge
+  elastic: c5.xlarge
+  gatling: c5.xlarge
+  kafka: c5.xlarge
+  monitor: c5.xlarge
+
+# Number of nodes
+counts:
+  nuxeo: 1
+  nuxeospot: 0
+  postgres: 1
+  elastic: 1
+  kafka: 1
+  gatling: 1
+  monitor: 1
+
+# number of ebs disk to aggregate in raid0
+raid0:
+  nuxeo: 1
+  nuxeospot: 1
+  postgres: 2
+  elastic: 2
+  kafka: 1
+  gatling: 1
+  monitor: 1
+
+# ebs volume size per disk per instance: total size for a group is: counts * volsizes * raid0
+volsizes:
+  nuxeo: 50
+  nuxeospot: 50
+  postgres: 50
+  elastic: 50
+  kafka: 50
+  gatling: 50
+  monitor: 50
+
+voltypes:
+  nuxeo: io1
+  nuxeospot: io1
+  postgres: io1
+  elastic: io1
+  kafka: gp2
+  gatling: gp2
+  monitor: gp2
+
+# To use spot instance set a price
+spot_price:
+  nuxeospot: "0.3"
+
+#iops: 2000
+iops: 500
+
+# should we apt-get update && apt-get distupgrade ?
+dist_upgrade: false
+
+use_oracle_jdk: false
+

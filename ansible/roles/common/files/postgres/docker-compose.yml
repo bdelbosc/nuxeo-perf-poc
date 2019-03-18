@@ -1,0 +1,15 @@
+version: "3.5"
+services:
+ postgres:
+    image: postgres:11-alpine
+    container_name: postgres
+    hostname: postgres
+    environment:
+      - POSTGRES_USER=****
+      - POSTGRES_PASSWORD=****
+    command: ["-c", "shared_buffers=256MB", "-c", "effective_cache_size=1GB", "-c", "work_mem=10MB", "-c", "wal_buffers=16MB", "-c", "full_page_writes=off"]
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+      - /ssd/data/postgres:/var/lib/postgresql/data:rw

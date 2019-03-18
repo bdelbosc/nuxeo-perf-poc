@@ -1,0 +1,13 @@
+defscrollback 8192
+
+startup_message off
+vbell off
+
+caption always "%{+u wk}%?%-w%?%{rk}/%n %t\%{wk}%?%+w%?"
+
+hardstatus alwayslastline "%{+b kw}%H|%{kg}%c%{kw}|%{ky}%Y-%m-%d%{kw}|%{kb}load %l"
+
+screen -t root 0 sudo -s
+screen -t root 1 sudo -s
+screen -t ubuntu 2
+select 0

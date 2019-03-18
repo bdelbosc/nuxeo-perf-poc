@@ -1,0 +1,151 @@
+---
+# Expect an AMI build from perfpoc/AMI (with docker compose, netdata ...)
+
+- name: Gather ec2 facts
+  action: ec2_metadata_facts
+
+- name: Set pub and private ip
+  set_fact:
+    private_ip: "{{ansible_ec2_local_ipv4}}"
+    public_ip: "{{ansible_ec2_public_ipv4}}"
+
+#- name: Display all variables/facts known for a host
+#  debug: var=hostvars[inventory_hostname] verbosity=4
+
+# setup hosts and hostname
+- name: Check if /etc/hosts is set
+  stat: path=/etc/hosts.bak
+  register: hostdone
+
+- name: apt-get update
+  shell: apt-get update
+  when: dist_upgrade and hostdone.stat.exists == false
+
+- name: apt-get upgrade
+  apt: upgrade=dist
+  when: dist_upgrade and hostdone.stat.exists == false
+
+- name: Activate sysstat
+  lineinfile:
+    dest: /etc/default/sysstat
+    regexp: '^#?ENABLED\s*='
+    line: "ENABLED=\"true\""
+  when: hostdone.stat.exists == false
+
+- name: Change sysstat frequency
+  lineinfile:
+    dest: /etc/cron.d/sysstat
+    regexp: 'debian-sa1 1 1$'
+    line: "*/2 * * * * root command -v debian-sa1 > /dev/null && debian-sa1 1 1"
+  notify: Restart sysstat
+  when: hostdone.stat.exists == false
+
+- name: Change atop frequency
+  lineinfile:
+    dest: /etc/default/atop
+    regexp: '^INTERVAL='
+    line: "INTERVAL=120"
+  notify: Restart atop
+  when: hostdone.stat.exists == false
+
+- include: disk_layout_nvme.yml
+  when: hostdone.stat.exists == false
+
+- name: Stop docker
+  service:
+    name: docker
+    state: stopped
+  when: hostdone.stat.exists == false
+
+- name: Init docker root
+  file:
+    path: "/ssd/docker"
+    state: directory
+  when: hostdone.stat.exists == false
+
+- name: Change docker path
+  copy:
+    src: docker-daemon.json
+    dest: "/etc/docker/daemon.json"
+  when: hostdone.stat.exists == false
+
+- name: Start docker
+  service:
+    name: docker
+    state: started
+  when: hostdone.stat.exists == false
+
+- name: Disable unattendy update
+  lineinfile:
+    dest: /etc/apt/apt.conf.d/10periodic
+    regexp: '^#?APT..Periodic..Unattended.Upgrade'
+    line: "APT::Periodic::Unattended-Upgrade \"0\";"
+  when: hostdone.stat.exists == false
+
+- name: Disable updatedb
+  file:
+    path: "/etc/cron.daily/mlocate"
+    state: absent
+  when: hostdone.stat.exists == false
+
+- name: Deploy screenrc
+  copy:
+    src: screenrc
+    dest: "/home/ubuntu/.screenrc"
+    owner: "ubuntu"
+  when: hostdone.stat.exists == false
+
+- name: Setup hosts names
+  include: ./set_hosts.yml
+  when: hostdone.stat.exists == false
+
+- name: Init docker compose layout
+  file:
+    path: "/ssd/{{ item.path }}"
+    state: directory
+    owner: "ubuntu"
+  with_filetree: "{{group_names}}"
+  when: item.state == "directory"
+
+- name: Init docker compose configuration
+  template:
+    src: "{{ item.src }}"
+    dest: "/ssd/{{ item.path }}"
+    mode: "{{ item.mode }}"
+    owner: "ubuntu"
+  with_filetree: "{{group_names}}"
+  when: item.state == "file"
+
+- name: Deploy htpasswd
+  htpasswd:
+    path: '/ssd/.htpasswd'
+    name: '{{basic_auth_user}}'
+    password: '{{basic_auth_password}}'
+    owner: root
+    group: ubuntu
+    # TODO: Should be 0640 but nginx even if starting as root use a user 100 to run
+    mode: 0644
+  when: "('gatling' in group_names) or ('monitor' in group_names)"
+
+- name: Deploy netdata config
+  template:
+    src: netdata.conf.j2
+    dest: /etc/netdata/netdata.conf
+  notify: Restart netdata
+
+- name: Get the Nuxeo distribution
+  get_url:
+    url: "{{ nuxeo_distribution }}"
+    dest: /ssd/upload/nuxeo-distribution-tomcat.zip
+  when: "'nuxeo' in group_names"
+
+- name: Copy uploaded to docker image
+  shell: cp -aru /ssd/upload /ssd/nuxeo
+  when: "'nuxeo' in group_names"
+
+- name: Pull docker images
+  shell: docker-compose -f /ssd/docker-compose.yml pull
+
+- name: Build docker images
+  shell: docker-compose -f /ssd/docker-compose.yml build
+

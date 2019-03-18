@@ -1,0 +1,13 @@
+---
+- name: Create empty dir
+  file: path=emptydir state=directory
+
+- name: Empty S3 binarystore bucket
+  shell: "aws s3 sync --quiet --delete emptydir/ s3://{{bucket}}/ --region {{aws_region}}"
+
+- name: Delete empty dir
+  file: path=emptydir state=absent
+
+- name: Drop the binarystore bucket
+  shell: "aws s3 rm s3://{{bucket}}/"
+

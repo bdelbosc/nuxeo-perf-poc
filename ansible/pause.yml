@@ -1,0 +1,7 @@
+---
+- import_playbook: stop.yml
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - include: ./roles/ec2/tasks/pause.yml

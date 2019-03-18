@@ -1,0 +1,10 @@
+---
+
+- name: Restart sysstat
+  service: name=sysstat state=restarted
+
+- name: Restart atop
+  service: name=atop state=restarted
+
+- name: Restart netdata
+  service: name=netdata state=restarted

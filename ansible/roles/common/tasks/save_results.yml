@@ -1,0 +1,25 @@
+---
+- name: Gather ec2 facts
+  action: ec2_metadata_facts
+
+- name: notify event on monitoring
+  shell: 'curl -XPOST http://monitor1:8080/events/  -d ''{"what": "Saving results", "tags":"phases save", "data": "{{bench_tag}}"}'''
+  when: "'monitor' in group_names"
+
+- name: copy csv import files
+  shell: /bin/cp /opt/nuxeo/server/nxserver/*.csv /opt/nuxeo/logs/
+  when: "'nuxeo' in group_names"
+
+- name: upload nuxeo logs
+  shell: aws s3 sync /opt/nuxeo/logs s3://{{bucket_results}}/{{bench_tag}}/`hostname`/ --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers full=emailaddress=system@nuxeo.com --region {{ansible_ec2_placement_region}}
+  when: "'nuxeo' in group_names"
+
+- name: Save atop info
+  shell: aws s3 sync /var/log/atop s3://{{bucket_results}}/{{bench_tag}}/`hostname`/atop/ --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers full=emailaddress=system@nuxeo.com --region {{ansible_ec2_placement_region}}
+
+- name: Save sysstat info
+  shell: aws s3 sync /var/log/sysstat s3://{{bucket_results}}/{{bench_tag}}/`hostname`/sysstat/ --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers full=emailaddress=system@nuxeo.com --region {{ansible_ec2_placement_region}}
+
+- name: Save gatling report
+  shell: aws s3 sync /home/ubuntu/reports s3://{{bucket_results}}/{{bench_tag}}/`hostname`/ --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers full=emailaddress=system@nuxeo.com --region {{ansible_ec2_placement_region}}
+  when: "'gatling' in group_names"

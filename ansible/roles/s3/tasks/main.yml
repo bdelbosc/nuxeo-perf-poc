@@ -1,0 +1,7 @@
+---
+- name: Create an empty bucket
+  aws_s3:
+    bucket: "{{bucket}}"
+    mode: create
+    region: "{{aws_region}}"
+

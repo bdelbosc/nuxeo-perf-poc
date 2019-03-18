@@ -1,0 +1,38 @@
+version: "3.5"
+services:
+  graphite:
+    build: graphite
+    image: graphiteapp/graphite-statsd:latest
+    container_name: graphite
+    hostname: graphite
+    user: root
+    ports:
+     - "2030:2003"
+     - "8080:80"
+    volumes:
+      - /ssd/data/graphite:/opt/graphite/storage/whisper:rw
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    hostname: grafana
+    user: root
+    ports:
+     - "3000:3000"
+    links:
+      - graphite
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=****
+      - GF_SERVER_ROOT_URL=http://{{traefik_fqdn}}/grafana/
+    volumes:
+      - /ssd/grafana/provisioning/:/etc/grafana/provisioning/:rw
+      - /ssd/data/grafana:/var/lib/grafana:rw
+  traefik:
+    image: traefik:alpine
+    container_name: traefik
+    hostname: traefik
+    ports:
+      - "80:80"
+    volumes:
+      - /ssd/traefik:/etc/traefik:ro
+      - /ssd/.htpasswd:/htpasswd:ro
+      - /etc/hosts:/etc/hosts:ro

@@ -1,0 +1,11 @@
+---
+- hosts: nuxeo:postgres:elastic:kafka:gatling:monitor
+  gather_facts: no
+  sudo: yes
+  roles:
+  - role: common
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - include: ./roles/ec2/tasks/summary.yml

@@ -1,0 +1,184 @@
+---
+- name: "{{type}} List stopped instances"
+  shell: aws ec2 describe-instances --filters "Name=tag:bench,Values={{bench}}" "Name=tag:bench_role,Values={{type}}" "Name=instance-state-name,Values=stopped" --region={{aws_region}} --no-paginate --query "Reservations[*].Instances[*].InstanceId" | grep "i-" | tr -d '" ,' | paste -d, -s
+  changed_when: False
+  register: stopped_instances
+
+- name: "{{type}} Start stopped instances"
+  ec2:
+    region: "{{aws_region}}"
+    instance_ids: "{{stopped_instances.stdout}}"
+    instance_tags:
+      bench: "{{bench}}"
+      bench_role: "{{type}}"
+      billing-category: "{{billing_category}}"
+      billing-subcategory: "{{billing_subcategory}}"
+    state: "running"
+    wait: yes
+  when: stopped_instances.stdout != ""
+  register: started_instances
+
+- name: "{{type}} Register empty list for started instances"
+  set_fact:
+    started_instances: {"instances": []}
+  when: stopped_instances.stdout == ""
+
+- name: Add started instances to group
+  add_host: hostname={{item.private_ip if keypair == "Jenkins" else item.public_ip}} groupname={{type}}
+  with_items: "{{ started_instances.instances }}"
+
+- name: "{{type}} Get an existing bench tag"
+  shell: echo "{{ hostvars[groups['nuxeo'][0]]['bench_tag'] }}"
+  register: existing_tag
+  when: (stamp_tag is not defined) and (groups['nuxeo'][0] is defined)
+
+- name: "{{type}} Create a default bench tag"
+  shell: echo "$(date +%y%m%d-%H%M)_{{counts.nuxeo}}nuxeo-{{types.nuxeo}}_{{counts.postgres}}postgres-{{types.postgres}}_{{counts.elastic}}es-{{types.elastic}}"
+  register: new_tag
+
+# this is a big hack because skipped task still register variable
+- name: "{{type}} Find the bench tag to use"
+  set_fact: stamp_tag="{{stamp_tag if (stamp_tag is defined) else existing_tag.stdout if (groups['nuxeo'][0] is defined) else new_tag.stdout}}"
+
+- name: "{{type}} Create/destroy instances"
+  ec2:
+    region: "{{aws_region}}"
+    key_name: "{{keypair}}"
+    instance_type: "{{types[type]}}"
+    image: "{{amis[type]}}"
+    vpc_subnet_id: "{{subnet_id}}"
+    group: "{{security_group}}"
+    instance_profile_name: "{{instance_profile}}"
+    assign_public_ip: yes
+    ebs_optimized: true
+    instance_tags:
+      Name: bench-{{bench}}-{{type}}
+      bench: "{{bench}}"
+      bench_role: "{{type}}"
+      billing-category: "{{billing_category}}"
+      billing-subcategory: "{{billing_subcategory}}"
+      bench_tag: "{{stamp_tag}}"
+    exact_count: "{{counts[type]}}"
+    count_tag:
+      bench: "{{bench}}"
+      bench_role: "{{type}}"
+    wait: yes
+  register: created_instances_regular
+  when: "spot_price[type] is not defined"
+
+- name: "{{type}} Create/destroy SPOT instances"
+  ec2:
+    spot_price: "{{spot_price[type]}}"
+    region: "{{aws_region}}"
+    key_name: "{{keypair}}"
+    instance_type: "{{types[type]}}"
+    image: "{{amis[type]}}"
+    vpc_subnet_id: "{{subnet_id}}"
+    group: "{{security_group}}"
+    instance_profile_name: "{{instance_profile}}"
+    assign_public_ip: yes
+    ebs_optimized: true
+    instance_tags:
+      Name: bench-{{bench}}-{{type}}
+      bench: "{{bench}}"
+      bench_role: "{{type}}"
+      billing-category: "{{billing_category}}"
+      billing-subcategory: "{{billing_subcategory}}"
+      bench_tag: "{{stamp_tag}}"
+    exact_count: "{{counts[type]}}"
+    count_tag:
+      bench: "{{bench}}"
+      bench_role: "{{type}}"
+    wait: yes
+  register: created_instances_spot
+  when: "spot_price[type] is defined"
+
+- name: "Build list of created_instance"
+  set_fact:
+    created_instances: "{{ created_instances_spot if spot_price[type] is defined else created_instances_regular }}"
+
+- name: "{{type}} Create ebs volume 1 xvdf"
+  ec2_vol:
+    instance: "{{ item.id }}"
+    region: "{{aws_region}}"
+    device_name: /dev/xvdf
+    volume_type: "{{voltypes[type]}}"
+    volume_size: "{{volsizes[type]}}"
+    iops: "{{iops}}"
+    delete_on_termination: yes
+  with_items: "{{ created_instances.instances }}"
+  when: raid0[type] >= 1
+
+- name: "{{type}} Create ebs volume 2 xvdg"
+  ec2_vol:
+    instance: "{{ item.id }}"
+    region: "{{aws_region}}"
+    device_name: /dev/xvdg
+    volume_type: "{{voltypes[type]}}"
+    volume_size: "{{volsizes[type]}}"
+    iops: "{{iops}}"
+    delete_on_termination: yes
+  with_items: "{{ created_instances.instances }}"
+  when: raid0[type] >= 2
+
+- name: "{{type}} Create ebs volume 3 xvdh"
+  ec2_vol:
+    instance: "{{ item.id }}"
+    region: "{{aws_region}}"
+    device_name: /dev/xvdh
+    volume_type: "{{voltypes[type]}}"
+    volume_size: "{{volsizes[type]}}"
+    iops: "{{iops}}"
+    delete_on_termination: yes
+  with_items: "{{ created_instances.instances }}"
+  when: raid0[type] >= 3
+
+- name: "{{type}} Create ebs volume 4 xvdi"
+  ec2_vol:
+    instance: "{{ item.id }}"
+    region: "{{aws_region}}"
+    device_name: /dev/xvdi
+    volume_type: "{{voltypes[type]}}"
+    volume_size: "{{volsizes[type]}}"
+    iops: "{{iops}}"
+    delete_on_termination: yes
+  with_items: "{{ created_instances.instances }}"
+  when: raid0[type] >= 4
+
+- name: Retrieve all volumes of new instances
+  ec2_vol:
+    instance: '{{ item.id }}'
+    region: "{{aws_region}}"
+    state: list
+  with_items: "{{ created_instances.instances }}"
+  register: ec2_volumes
+
+#- name: Ensure all volumes are tagged
+#  ec2_tag:
+#    resource: '{{ item.attachment_set.id }}'
+#    region: "{{aws_region}}"
+#    state: present
+#    tags:
+#      bench: "{{bench}}"
+#      bench_role: "{{type}}"
+#      billing-category: build
+#      billing-subcategory: bench
+#      bench_tag: "{{stamp_tag}}"
+#  with_items:
+#      - ec2_volumes.volumes
+
+- name: "{{type}} Add new instances to group"
+  add_host:
+    hostname: "{{item.private_ip if keypair == 'Jenkins' else item.public_ip}}"
+    groupname: "{{type}}"
+  with_items: "{{ created_instances.instances }}"
+  when: "{{ created_instances.changed }}"
+
+- name: "{{type}} Wait for SSH to be available on all instances"
+  wait_for:
+    host: "{{ item.private_ip if keypair == 'Jenkins' else item.public_ip }}"
+    port: 22
+    delay: 10
+    timeout: 320
+    state: started
+  with_items: "{{ started_instances.instances + created_instances.instances }}"

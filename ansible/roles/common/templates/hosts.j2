@@ -1,0 +1,50 @@
+127.0.0.1 localhost
+{% if groups['mongodb'] is defined %}
+{% for host in groups['mongodb'] %}
+{{ hostvars[host].private_ip }} mongo{{loop.index}}
+{% endfor %}
+{% endif %}
+{% if groups['postgres'] is defined %}
+{% for host in groups['postgres'] %}
+{{ hostvars[host].private_ip }} postgres{{loop.index}}
+{% endfor %}
+{% endif %}
+{% if groups['nuxeo'] is defined %}
+{% for host in groups['nuxeo'] %}
+{{ hostvars[host].private_ip }} nuxeo{{loop.index}}
+{% endfor %}
+{% endif %}
+{% if groups['nuxeospot'] is defined %}
+{% for host in groups['nuxeospot'] %}
+{{ hostvars[host].private_ip }} nuxeospot{{loop.index}}
+{% endfor %}
+{% endif %}
+{% if groups['elastic'] is defined %}
+{% for host in groups['elastic'] %}
+{{ hostvars[host].private_ip }} elastic{{loop.index}}
+{% endfor %}
+{% endif %}
+{% if groups['kafka'] is defined %}
+{% for host in groups['kafka'] %}
+{{ hostvars[host].private_ip }} kafka{{loop.index}}
+{% endfor %}
+{% endif %}
+{% if groups['gatling'] is defined %}
+{% for host in groups['gatling'] %}
+{{ hostvars[host].private_ip }} gatling{{loop.index}}
+{% endfor %}
+{% endif %}
+{% if groups['monitor'] is defined %}
+{% for host in groups['monitor'] %}
+{{ hostvars[host].private_ip }} monitor{{loop.index}}
+{% endfor %}
+{% endif %}
+
+# The following lines are desirable for IPv6 capable hosts
+
+::1 ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
