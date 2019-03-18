@@ -1,7 +1,7 @@
 # Perf poc
 ## About
 
-Helper create performance poc deployed in AWS.
+Ansible scripts to deploy a Nuxeo environment in AWS ready for performance testing.
 
 ## Install
 
