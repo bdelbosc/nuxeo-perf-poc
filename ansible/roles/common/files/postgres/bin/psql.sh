@@ -2,4 +2,4 @@
 
 # Run psql client
 set -x
-docker exec -it postgres psql postgresql://nuxeo:nuxeo@postgres:5432/nuxeo
+docker exec -it postgres psql postgresql://{{pg_user}}:{{pg_password}}@postgres:5432/{{pg_db}}

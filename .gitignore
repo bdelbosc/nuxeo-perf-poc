@@ -1,9 +1,10 @@
 venv
+ansible/group_vars/all.yml
 deploy
 logs
+aws.ini
 ec2.ini
 instance.clid
-ansible/group_vars/all/custom.yml
 .idea
 *.iml
 *.swp
